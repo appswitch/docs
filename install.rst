@@ -1,20 +1,24 @@
-=========================
-Install and Configuration
-=========================
+==============================
+Installation and Configuration
+==============================
 
 .. _install:
 
-Running the AppSwitch docker image will start the ``ax`` daemon and also copy
-the binary onto the host at ``/usr/bin/ax``.  No further installation is
-required.
-
-
-Running the Daemon
-==================
-
-It can be convenient to run the AppSwitch daemon in a container using
-``docker-compose``.  Here is an example docker-compose file
+AppSwitch client and daemon are both built as a static binary, ``ax``, with no external dependencies.  It is packaged into a docker image for convenience.  Installation of the binary (copying to /usr/bin) and bringing up of the daemon can be done by running the following comamnd:
 ::
+
+    curl -L http://appswitch.io/docker-compose.yaml | docker-compose -f - up -d
+
+
+It runs the latest release of AppSwitch docker image through a docker-compose file.  The compose file includes most common configuration options as environment variables.  Additional options can be passed through AX_OPTS.
+::
+
+    #
+    # docker-compose file AppSwitch Daemon
+    #
+    # Bring up with:
+    #  docker-compose up -d appswitch
+    #
 
     version: '2.3'
 
@@ -32,52 +36,13 @@ It can be convenient to run the AppSwitch daemon in a container using
           - /dev:/dev
           - /var/run/appswitch:/var/run/appswitch
           - appswitch_logs:/var/log
-        env_file:
-          - ${AX_CONFIG_FILE:-ax.config}
-
-      test:
-        image: python:alpine
-        entrypoint: /usr/bin/ax run --name test
-        command: python -m http.server
-        privileged: true
-        networks: []
-        volumes:
-          - /usr/bin:/usr/bin
-          - /var/run/appswitch:/var/run/appswitch
-        depends_on:
-          - appswitch
+        environment:
+          - AX_DRIVER=user # Syscall forwarding driver
+          - AX_NODE_INTERFACE= # Node interface to use by daemon.  Accepts IP address or interface name, eg eth0
+          - AX_NEIGHBORS= # List (csv) of IP addresses of cluster neighbors
+          - AX_CLUSTER= # Cluster name.  Required if cluster is part of a federation
+          - AX_FEDERATION_GATEWAY_IP= # IP address or `interface` name for federation connectivity
+          - AX_FEDERATION_GATEWAY_NEIGHBORS= # List (`csv`) of IP addresses of federation neighbors (other gateway nodes)
+          - AX_OPTS=--clean # Remove any saved state from previous sessions
 
 
-As indicated in this docker-compose file the AppSwitch daemon can be
-passed a config file by either setting an environment variable
-``AX_CONFIG_FILE`` or placing the configuration options in a file called
-``ax.config`` in the same directory as the docker-compose file above.
-
-(You only need the ``/dev`` volume if you are using the kernel driver.)
-
-The configuration file consists of environment variable definitions.
-::
-
-    # AppSwitch configuration file template.
-    #
-    #  Copy to ax.config or set AX_CONFIG_FILE within your environment.
-
-    # Syscall forwarding driver
-    AX_DRIVER=user
-
-    # Cluster config options.
-    AX_NODE_INTERFACE=
-    AX_NEIGHBORS=
-
-    # Federation config options.
-    AX_CLUSTER=
-    AX_FEDERATION_GATEWAY_IP=
-    AX_FEDERATION_GATEWAY_NEIGHBORS=
-
-    # Additional options
-    # APPSWITCH_OPTS=--clean --dns-domain=local.appswitch
-    APPSWITCH_OPTS=--clean
-
-
-Of course you can just run the daemon from the command line if you prefer
-but then you will need to pass all configuration options on the command line.
