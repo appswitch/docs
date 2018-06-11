@@ -1,39 +1,44 @@
-======================
-AppSwitch Architecture
-======================
+============
+Architecture
+============
 
 .. _arch:
 
-An application that wishes to communicate with other applications over the
-network must be associated with a network endpoint.  Under the OSI model
-this means a transport layer address (consisting of a port number and a
-protocol) and a network layer address (for example an IPv4 address).
-Traditionally this network endpoint is associated with an internal endpoint
-(a network socket).
+AppSwitch consists of two components, a client and a daemon.  One instance of daemon runs per host (physical / virtual machine) and exposes an interface that the client uses.  The client transparently plugs into the application and tracks the network system calls it makes such as socket(), connect(), bind(), accept() and forwards them to the daemon over a UNIX socket.  Client is not a separate process or a thread.  Rather it directly runs in the context of the application itself.  The daemon handles the system calls forwarded to it from applications based on the policy.
 
-AppSwitch removes this connection between the network endpoint and the
-internal endpoint.  The network endpoint seen by the application then
-becomes 'virtual' allowing administrators to use any network address.  This
-means that an application can be given any IPv4 address and any port number
-and AppSwitch will connect this to an internal endpoint and handle the
-translation.
+.. image:: images/architecture.png
+    :width: 270
+    :align: center
+    :height: 300
 
-AppSwitch integrates with the Domain Name System.  Applications can be
-given any name and AppSwitch will facilitate that name being resolved using
-DNS.
 
-AppSwitch does not effect the network data path (i.e reads and writes to
-the socket).  For this reason data throughput is maintained and in some
-cases even improved (see performance comparison between Linux bridge and
-AppSwitch).
+.. _servicetable:
 
+
+Service Table
+=============
+
+
+AppSwitch provides a logically centralized data structure called *service table* that maintains a record of all currently running services across the cluster.  The table is automatically updated as services come and go.
+
+When an application calls listen() system call, a new service is automatically added to the service table along with a set of system and user-defined attributes.  The service attributes include app-id, name (if specified), protocol, app-ip:app-port, host-ip:host-port and labels.
+
+Clients running in an AppSwitch cluster would be able to access the services listed in the server table by simply connect()ing to the app-ip:app-port listed in the service table entry.  AppSwitch transparently performs service discovery, access control and traffic management based on specified policy and the contents of the service table and appropriately directs the connection.
+
+
+Service Router
+==============
+
+Service router propagates the information about services as they come and go to other instances of AppSwitch daemons across hosts and clusters.  It provides flexible ingress, egress, and federation capabilities such that applications running on an AppSwitch cluster can communicate with non-AppSwitch external entities or to communicate across clusters.
 
 .. _hierarchy:
 
 AppSwitch Hierarchical Model
 ============================
 
-AppSwitch model has the following hierarchy
+
+AppSwitch model has the following hierarchy.  
+
 
 Federation:
 
@@ -43,61 +48,21 @@ Cluster:
 
 - Contains a set of nodes with mutual IP connectivity.
 - A cluster may have one or more federation gateways.
-- Federation gateways across clusters peer with each other over a gossip
-  channel.
+- Federation gateways across clusters peer with each other over a federation gossip channel.
 
 Node:
 
 - Contains applications managed by AppSwitch.
-- Each node runs an AppSwitch daemon instance.
+- Each node runs an AppSwitch daemon instance.  Daemons across nodes peer with each other over the cluster gossip channel.
 
 Application:
 
-- Contains zero or more client / server sockets, all maintained by
-  the AppSwitch daemon on behalf of the application.
+- Contains zero or more client / server sockets, maintained by the AppSwitch daemon on behalf of the application.
 
 
-.. _servicetable:
+.. image:: images/federation.png
+    :width: 1500
+    :align: center
+    :height: 310px
 
-Service Table
-=============
-
-AppSwitch provides a logically centralized data structure called *service table*
-that maintains a record of all currently running services across the cluster.
-The table is automatically updated as services come and go.
-
-When an application calls listen() system call, a new service is automatically
-added to the service table along with a set of system and user-defined
-attributes.  The service attributes include app-id, name (if specified),
-protocol, app-ip:app-port, host-ip:host-port and labels.
-
-Clients running in an ax cluster would be able to access the services listed in
-the server table by simply connect()ing to the app-ip:app-port listed in the
-service table entry.  AppSwitch transparently performs service discovery, access
-control and traffic management based on specified policy and the contents of the
-service table and appropriately directs the connection.
-
-
-.. _ingress:
-
-Connectivity with External Entities
-===================================
-
-Flexible ingress, egress, and federation capabilities are provided for
-applications running on an AppSwitch cluster to communicate with non-AppSwitch
-external entities or to communicate across clusters.
-
-
-Ports
-=====
-
-AppSwitch uses (by default) the following ports
-
-| 6664 :ref:`rest-port-label`
-| 7946 Cluster gossip protocol (see :ref:`serf-label`)
-| 7947 Federation gossip (see :ref:`federation-label`)
-| 6660 Ingress federation proxy (see :ref:`federation-label`)
-|
-
-These port numbers are configurable, please see links above for details.
 

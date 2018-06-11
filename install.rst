@@ -46,3 +46,14 @@ It runs the latest release of AppSwitch docker image through a docker-compose fi
           - AX_OPTS=--clean # Remove any saved state from previous sessions
 
 
+Ports
+=====
+
+AppSwitch uses (by default) the following ports.  Please make sure that firewalls don't get in the way of these ports.
+
+| 6664 :ref:`rest-port-label`
+| 7946 Cluster gossip channel (see :ref:`serf-label`)
+| 7947 Federation gossip channel (see :ref:`federation-label`)
+| 6660 Ingress federation proxy (see :ref:`federation-label`)
+|
+
