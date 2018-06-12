@@ -55,7 +55,7 @@ In order to configure more than one node into an AppSwitch cluster you may
 provide to each node a comma separated list of IP addresses of neighbor nodes.
 ::
 
-   $ sudo ax daemon --node-interface 192.168.0.2 --neighbors 192.168.0.2,192.168.0.3
+   $ ax daemon --node-interface 192.168.0.2 --neighbors 192.168.0.2,192.168.0.3
 
 
 Clean Start
@@ -93,7 +93,7 @@ absolute path) for profiling output.  Output file is a binary file that can be
 viewed using standard ``go`` tools.
 ::
 
-    $ sudo ax daemon --cpu-profile /tmp/cpu.prof
+    $ ax daemon --cpu-profile /tmp/cpu.prof
     ... Ctl-C
 
     $ go tool pprof /tmp/cpu.prof
@@ -122,7 +122,7 @@ Configuration options for the built-in DNS server.  You can
 optionally specify a DNS suffix and a list of forwarding DNS servers.  For example
 ::
 
-   $ sudo ax daemon --dns-servers 127.0.0.1:5533,8.8.8.8
+   $ ax daemon --dns-servers 127.0.0.1:5533,8.8.8.8
 
 
 .. _tls:
@@ -150,7 +150,7 @@ TLS.  If you create a self signed certificate you can start the AppSwitch
 daemon like this
 ::
 
-   $ sudo ax daemon --tls \
+   $ ax daemon --tls \
        --tls-ca-cert /etc/ssl/certs/cacert.pem \
        --tls-cert /etc/ssl/certs/ax.crt \
        --tls-key /etc/ssl/private/ax.key
@@ -165,7 +165,7 @@ Ports
 AppSwitch binds application sockets to ports on the host from this port space.
 ::
 
-   $ sudo ax daemon --ports '4000,6000-8000'
+   $ ax daemon --ports '4000,6000-8000'
 
 
 .. _rest-port-label:
@@ -306,27 +306,41 @@ client with a label ``role=test`` cannot connect to a service with a label
 
 Exposed Ports
 -------------
+
+``--expose`` option is used to expose an internal application port on the cluster node(s) such that the service can be accessed by external non-AppSwitch clients.  There are three variations of it:
+
 ::
 
-   --ports mapping	Port mapping of exposed application ports (e.g '80:9999')
+   --expose internal-port:host-port
 
 
-The specified application port would be exposed on the specified external
-port on every node in the AppSwitch cluster. This is equivalent to the
-nodePort feature of Kubernetes.  A similar result can also be produced by
-creating an external `vservice`_.
+The specified application port would be exposed on the specified external port only on the node where the application is running.
 
-For example, a python web server (port 8000) started with the ``--ports``
-option can be exposed on external port 9999 as follows
+For example, a python web server (port 8000) can be exposed on external port 9999 as follows:
+
 ::
 
-   $ sudo ax run --ports '8000:9999' python -m http.server
+   $ ax run --expose '8000:9999' python -m http.server
    $ curl -I 192.168.0.2:9999
    HTTP/1.0 200 OK
    Server: SimpleHTTP/0.6 Python/3.5.2
    Date: Mon, 30 Apr 2018 05:23:33 GMT
    Content-type: text/html; charset=utf-8
    Content-Length: 2377
+
+::
+
+   --expose internal-port:<node-IP>:node-port
+
+The specified application port would be exposed on the specified external port only on the specified node.  The specified node-IP must belong to one of the nodes in the AppSwitch cluster.
+
+
+::
+
+   --expose internal-port:0.0.0.0:node-port
+
+
+The specified application port would be exposed on the specified external port on every node in the AppSwitch cluster. This is equivalent to the nodePort feature of Kubernetes.  A similar result can also be produced by creating an external `vservice`_.
 
 
 User
@@ -343,10 +357,10 @@ option the name or UID of a valid user can be given to the client and the
 application being run will be run as that user.
 ::
 
-   $ sudo ax run -- whoami
+   $ ax run -- whoami
    root
 
-   $ sudo ax run --user alice whoami
+   $ ax run --user alice whoami
    alice
 
 
@@ -365,13 +379,13 @@ loopback interface. This option requires that ``--no-new-netns`` flag is
 not used.
 ::
 
-   $ sudo ax run -- ip addr show
+   $ ax run -- ip addr show
    1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN group default qlen 1000
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
 
 ::
 
-   $ sudo ax run --interface eth0 ip addr show
+   $ ax run --interface eth0 ip addr show
    1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN group default qlen 1
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
    2: eth0: <BROADCAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
@@ -415,10 +429,10 @@ The ``get`` command is used to display current AppSwitch resources.
 Examples:
 
 - The IP address of the host machine is 192.168.178.2
-- The daemon was started with: ``sudo ax daemon --node-name node1``
+- The daemon was started with: ``ax daemon --node-name node1``
 - Two AppSwitch client instances were started
-  - ``sudo ax run -- nc -l 6000``
-  - ``sudo ax run -- iperf3 -s``
+  - ``ax run -- nc -l 6000``
+  - ``ax run -- iperf3 -s``
 
 
 
