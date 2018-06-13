@@ -32,13 +32,32 @@ Some of the use cases include:
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Getting Started
 
    overview
-   arch
    install
+
+
+.. toctree::
+   :maxdepth: 2
+   :caption: In Depth
+
    cli
+   arch
    integrations
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Example Scenarios
+
+   examples/examples
+   examples/single-node
+   examples/multi-node
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Further Reading
+   
    reading
 
 Indices and tables
