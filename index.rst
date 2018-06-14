@@ -1,3 +1,4 @@
+=======================
 AppSwitch Documentation
 =======================
 
@@ -29,17 +30,28 @@ Some of the use cases include:
 * "flat" connectivity with client IP preservation across hybrid network
   environments.
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Getting Started
+
+   overview
+   install
+   examples
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: In Depth
 
-   overview
-   arch
-   install
    cli
+   arch
    integrations
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Further Reading
+
    reading
+
 
 Indices and tables
 ==================
