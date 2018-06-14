@@ -36,7 +36,7 @@ First step is to bring up AppSwitch daemon with the docker-compose file.  It inc
 ::
 
    $ cd appswitch
-   $ docker-compose up -f docker-compose-host00.yaml -d appswitch
+   $ docker-compose -f docker-compose-host00.yaml up -d appswitch
 
 
 Let's start a simple Python based HTTP server using the supplied docker-compose file.
@@ -56,7 +56,7 @@ Let's start a simple Python based HTTP server using the supplied docker-compose 
 
 ::
 
-   $ docker-compose up -f docker-compose-httpserver.yaml -d httpserver
+   $ docker-compose -f docker-compose-httpserver.yaml up -d httpserver
 
 
 That brings up the server on the specified ip (``1.1.1.1``).  Note that the container in which the server runs has no networks.  All network connectivity is handled by AppSwitch.  Also note that it is an unprivileged container.
@@ -104,12 +104,12 @@ Connecting to services without AppSwitch AKA 'Ingress Gateway'
 Services run by AppSwitch can be exposed externally with the ``--expose`` option.
 ::
 
-   $ sudo ax run --ip 1.1.1.1 --name webserver --expose 8000:10.0.2.15:10000 python -m SimpleHTTPServer 8000 &
+   $ sudo ax run --ip 1.1.1.1 --name webserver --expose 8000:192.168.0.10:10000 python -m SimpleHTTPServer 8000 &
 
 We can now connect to the web server using curl without wrapping the command in ``ax``
 ::
 
-   $ curl -I 10.0.2.15:10000
+   $ curl -I 192.168.0.10:10000
    HTTP/1.0 200 OK
    Server: SimpleHTTP/0.6 Python/2.7.5
    Date: Wed, 06 Jun 2018 03:18:02 GMT
@@ -140,12 +140,12 @@ And view the app
 We can associate an IP address with this app by creating a virtual service.
 ::
 
-   $ ax create vservice --ip 1.1.1.1 --backends 10.0.2.15  --expose 8000 myvsvc
+   $ ax create vservice --ip 1.1.1.1 --backends 10.0.2.15  --expose 8000:10000 myvsvc
    Service 'myvsvc' created successfully with IP '1.1.1.1'.
    $ ax get vservices
-     VSNAME  VSTYPE   VSIP       VSPORTS     VSBACKENDIPS  
-   ------------------------------------------------------
-     myvsvc  Random  1.1.1.1  [{8000 8000}]  [10.0.2.15]
+     VSNAME  VSTYPE   VSIP       VSPORTS      VSBACKENDIPS
+   -------------------------------------------------------
+     myvsvc  Random  1.1.1.1  [{8000 10000}]  [10.0.2.15]
 
 Now we can curl to the virtual IP or the virtual name.  This feature
 enables multiple IPs for the same server since the server is still
@@ -155,7 +155,7 @@ AppSwitch will load balance when connecting to the virtual name or IP.
 Currently round-robin and random load balancing strategies are supported.
 ::
 
-   $ sudo ax run -- curl -I myvsrvc:8000
+   $ sudo ax run -- curl -I myvsvc:8000
    $ sudo ax run -- curl -I 1.1.1.1:8000
 
 
@@ -165,48 +165,36 @@ Multi-Node AppSwitch Cluster
 Bring up a second VM so that we can build a 2 node AppSwitch cluster:
 ::
 
-   $ vagrant up host10
-   $ vagrant ssh host10
+   $ vagrant up host01
 
-
-Configure and Start the Daemon
-------------------------------
-
-There are docker-compose files that include configuration to bring up AppSwitch on these two nodes:
-
-- host00: multi-host00-docker-compose.yaml
-- host10: multi-host10-docker-compose.yaml
-
-A quick look at these files shows that we are passing the daemon the node
-IP and a list of neighbors, in this case the IP addresses of both nodes.
-Bring up the daemon on each node.
-
-Start the AppSwitch daemon:
+ssh in and start the AppSwitch daemon
 ::
 
-   host-10 $ docker-compose --file docker-compose-host10.yaml up -d
+   $ vagrant ssh host01
+   host01 $ docker-compose --file docker-compose-host01.yaml up -d
 
-
-Now we can have a play with these two nodes. We can then try curl'ing the server we brought up earlier from host10.
+Now we can have a play with these two nodes. We can then try curl'ing the
+server we brought up earlier on host00 from host01.
 ::
 
-   $ sudo ax run -- curl -I webserver:8000
+   host01 $ sudo ax run -- curl -I webserver:8000
    HTTP/1.0 200 OK
    Server: SimpleHTTP/0.6 Python/2.7.5
    Date: Wed, 06 Jun 2018 03:18:02 GMT
    Content-type: text/html; charset=UTF-8
    Content-Length: 274
 
-
-From host00 we can then directly curl the web server
+Let's restart the webserver on host00, this time passing it the ingress gateway
+wildcard address
 ::
 
-   $ curl -I 10.0.0.11:10000
+   host00 $ sudo ax run --ip 1.1.1.1 --name webserver --expose 8000:0.0.0.0:10000 python -m SimpleHTTPServer 8000 &
 
-And on host10 we can hit it also
+From either host we can now directly curl the web server
 ::
 
-   $ curl -I 10.0.0.10:10000
+   $ curl -I 192.168.0.11:10000
+   $ curl -I 192.168.0.10:10000
 
    
 Multi-Node Multi-Cluster AKA AppSwitch Federation
@@ -225,7 +213,7 @@ Let us now configure two AppSwitch clusters each consisting of two nodes.  As do
 Bring up the other two VMs:
 ::
 
-   $ vagrant up host01
+   $ vagrant up host10
    $ vagrant up host11
 
 
@@ -240,7 +228,7 @@ gateways.  Also each node must be configured with a cluster name,
 Start the AppSwitch daemon on each node
 ::
 
-   $ docker-compose --file docker-compose-host##.yaml up -d
+   $ docker-compose --file docker-compose-$(hostname).yaml up -d
 
 
 Now we can have a play with these four nodes.  First let's start a web
