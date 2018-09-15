@@ -85,8 +85,6 @@ connectivity underneath.
         -v /var/run/appswitch:/var/run/appswitch \
         -v /usr/bin/ax:/usr/bin/ax \
         --entrypoint /usr/bin/ax \
-        --cap-add NET_ADMIN \
-        --cap-add SYS_ADMIN \
         run --ip 1.1.1.1 nginx -g 'daemon off;'
 
 Note that it's an off-the-shelf Docker image with no customizations etc.  Also
@@ -115,7 +113,7 @@ You can verify that there are multiple servers serving on the same IP address by
 listing the contents of the *service table* with ``ax`` command
 ::
 
-    $ ax show srtables servers
+    $ ax get servers
     NODEID    CLUSTER     APPID     PROTO   SERVICEADDR      IPV4ADDR
     ------------------------------------------------------------------------
     host0   appswitch     f83e8600    tcp    1.1.1.1:80     10.0.2.15:40010
