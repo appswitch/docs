@@ -20,8 +20,8 @@
 # -- Project information -----------------------------------------------------
 
 project = u'AppSwitch'
-copyright = u'2018, AppSwitch authors'
-author = u'AppSwitch authors'
+copyright = u'2018, AppOrbit'
+author = u'AppOrbit'
 
 # The short X.Y version
 version = u''
