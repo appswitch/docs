@@ -19,7 +19,7 @@ All examples require use of Vagrant to bring up the virtual machines used to for
 
 We will be progressively working up to an advanced AppSwitch configuration using all four nodes.  The node naming convention is based on the requirements of those use cases.  To start with the naming convention is not important but for the interested, the nodes are named ``hostXY`` where ``X`` is the cluster number and ``Y`` is the node number.
 
-Bring up the fist node and ssh into it:
+Bring up the first node and ssh into it:
 ::
 
    $ vagrant up host00
